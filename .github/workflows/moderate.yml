@@ -1,0 +1,29 @@
+# Copy to .github/workflows/moderate.yml in the public comments repository,
+# with moderate.mjs at .github/moderation/moderate.mjs.
+name: Moderate comments
+on:
+  discussion_comment:
+    types: [created, edited]
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+  discussions: write
+concurrency:
+  group: moderate-${{ github.event.comment.id || 'sweep' }}
+jobs:
+  moderate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/moderation
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node .github/moderation/moderate.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MODERATION_BLOCKLIST: ${{ vars.MODERATION_BLOCKLIST }}
